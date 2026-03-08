@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SSO Admin Panel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e40af;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header span { font-size: 0.9rem; opacity: 0.8; }
+    main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .stats { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+      flex: 1;
+    }
+    .stat-card .label { font-size: .8rem; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #1e40af; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    thead { background: #1e40af; color: #fff; }
+    th, td { padding: .75rem 1rem; text-align: left; font-size: .9rem; }
+    tr:nth-child(even) { background: #f8fafc; }
+    tr:hover { background: #e0f2fe; }
+    .badge {
+      display: inline-block;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-active   { background: #dcfce7; color: #166534; }
+    .badge-inactive { background: #fee2e2; color: #991b1b; }
+    .badge-admin    { background: #fef3c7; color: #92400e; }
+    .badge-user     { background: #e0e7ff; color: #3730a3; }
+    .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    button {
+      border: none;
+      border-radius: 4px;
+      padding: .3rem .7rem;
+      cursor: pointer;
+      font-size: .8rem;
+      transition: opacity .15s;
+    }
+    button:hover { opacity: .8; }
+    .btn-activate   { background: #22c55e; color: #fff; }
+    .btn-deactivate { background: #f97316; color: #fff; }
+    .btn-revoke     { background: #6366f1; color: #fff; }
+    .btn-delete     { background: #ef4444; color: #fff; }
+    .btn-role       { background: #0ea5e9; color: #fff; }
+    .pagination { display: flex; gap: .5rem; margin-top: 1rem; }
+    .pagination a {
+      display: inline-block;
+      padding: .4rem .8rem;
+      border-radius: 4px;
+      background: #1e40af;
+      color: #fff;
+      text-decoration: none;
+      font-size: .85rem;
+    }
+    .pagination a.current { background: #1e3a8a; font-weight: bold; }
+    .pagination a.disabled { background: #94a3b8; pointer-events: none; }
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e40af;
+      color: #fff;
+      padding: .8rem 1.2rem;
+      border-radius: 6px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🔐 SSO Admin Panel</h1>
+  <span>Total users: <strong>{{.Total}}</strong></span>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">Total Users</div>
+      <div class="value">{{.Total}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Page</div>
+      <div class="value">{{.Page}} / {{.Pages}}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range .Users}}
+    <tr id="row-{{.ID}}">
+      <td>{{.ID}}</td>
+      <td>{{.Email}}</td>
+      <td>{{.Username}}</td>
+      <td>
+        <span class="badge {{if eq .Role "admin"}}badge-admin{{else}}badge-user{{end}}">{{.Role}}</span>
+      </td>
+      <td>
+        {{if .Active}}
+          <span class="badge badge-active">active</span>
+        {{else}}
+          <span class="badge badge-inactive">inactive</span>
+        {{end}}
+      </td>
+      <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+      <td class="actions">
+        {{if .Active}}
+          <button class="btn-deactivate" onclick="setActive({{.ID}}, false)">Deactivate</button>
+        {{else}}
+          <button class="btn-activate" onclick="setActive({{.ID}}, true)">Activate</button>
+        {{end}}
+        <button class="btn-role" onclick="changeRole({{.ID}}, '{{.Role}}')">Role</button>
+        <button class="btn-revoke" onclick="revokeTokens({{.ID}})">Revoke Tokens</button>
+        <button class="btn-delete" onclick="deleteUser({{.ID}})">Delete</button>
+      </td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {{if gt .Page 1}}
+      <a href="?page={{.Page | prevPage}}">← Prev</a>
+    {{else}}
+      <a class="disabled">← Prev</a>
+    {{end}}
+    <a class="current">Page {{.Page}}</a>
+    {{if lt .Page .Pages}}
+      <a href="?page={{.Page | nextPage}}">Next →</a>
+    {{else}}
+      <a class="disabled">Next →</a>
+    {{end}}
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const base = '/admin';
+  function toast(msg, err) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = err ? '#dc2626' : '#1e40af';
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+  function api(url, method, body) {
+    return fetch(url, {
+      method,
+      headers: {'Content-Type': 'application/json'},
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(r => r.json());
+  }
+  function setActive(id, active) {
+    const action = active ? 'activate' : 'deactivate';
+    api(`${base}/users/${id}/${action}`, 'POST').then(res => {
+      if (res.error) { toast(res.error, true); return; }
+      toast(`User ${id} ${action}d`);
+      setTimeout(() => location.reload(), 800);
+    });
+  }
+  function changeRole(id, current) {
+    const newRole = prompt('Enter new role (user / admin):', current);
+    if (!newRole) return;
+    api(`${base}/users/${id}/role`, 'PUT', {role: newRole}).then(res => {
+      if (res.error) { toast(res.error, true); return; }
+      toast(`Role updated to "${newRole}"`);
+      setTimeout(() => location.reload(), 800);
+    });
+  }
+  function revokeTokens(id) {
+    if (!confirm(`Revoke all tokens for user ${id}?`)) return;
+    api(`${base}/users/${id}/revoke-tokens`, 'POST').then(res => {
+      if (res.error) { toast(res.error, true); return; }
+      toast('Tokens revoked');
+    });
+  }
+  function deleteUser(id) {
+    if (!confirm(`Permanently delete user ${id}? This cannot be undone.`)) return;
+    api(`${base}/users/${id}`, 'DELETE').then(res => {
+      if (res.error) { toast(res.error, true); return; }
+      toast(`User ${id} deleted`);
+      setTimeout(() => location.reload(), 800);
+    });
+  }
+</script>
+</body>
+</html>

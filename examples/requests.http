@@ -1,0 +1,118 @@
+### SSO Server — HTTP Request Examples
+### Compatible with VSCode REST Client, JetBrains HTTP Client, httpie, and curl.
+### Base URL — change if needed.
+
+@base = http://localhost:8080
+
+### ─────────────────────────────────────────────
+###  Health check
+### ─────────────────────────────────────────────
+
+GET {{base}}/health
+
+
+### ─────────────────────────────────────────────
+###  Register a new user
+### ─────────────────────────────────────────────
+
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "username": "alice",
+  "password": "Secret123"
+}
+
+
+### ─────────────────────────────────────────────
+###  Login → returns access_token, id_token, refresh_token
+### ─────────────────────────────────────────────
+
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "Secret123"
+}
+
+# Capture tokens from the response (REST Client / JetBrains):
+@accessToken  = {{login.response.body.access_token}}
+@idToken      = {{login.response.body.id_token}}
+@refreshToken = {{login.response.body.refresh_token}}
+
+
+### ─────────────────────────────────────────────
+###  Get user info (requires access token)
+### ─────────────────────────────────────────────
+
+GET {{base}}/auth/userinfo
+Authorization: Bearer {{accessToken}}
+
+
+### ─────────────────────────────────────────────
+###  Refresh tokens (token rotation)
+### ─────────────────────────────────────────────
+
+# @name refresh
+POST {{base}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+@accessToken  = {{refresh.response.body.access_token}}
+@refreshToken = {{refresh.response.body.refresh_token}}
+
+
+### ─────────────────────────────────────────────
+###  Logout (revokes the refresh token)
+### ─────────────────────────────────────────────
+
+POST {{base}}/auth/logout
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+
+### ─────────────────────────────────────────────
+###  Admin API  (Basic Auth: admin / admin)
+### ─────────────────────────────────────────────
+
+### List users (JSON)
+GET {{base}}/admin/users?page=1&limit=10
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Get single user
+GET {{base}}/admin/users/1
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Deactivate user
+POST {{base}}/admin/users/1/deactivate
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Activate user
+POST {{base}}/admin/users/1/activate
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Change role to admin
+PUT {{base}}/admin/users/1/role
+Authorization: Basic YWRtaW46YWRtaW4=
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+
+### Revoke all tokens for user
+POST {{base}}/admin/users/1/revoke-tokens
+Authorization: Basic YWRtaW46YWRtaW4=
+
+### Delete user permanently
+DELETE {{base}}/admin/users/1
+Authorization: Basic YWRtaW46YWRtaW4=
