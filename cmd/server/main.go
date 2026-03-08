@@ -51,9 +51,16 @@ func main() {
 		log.Fatalf("parse templates: %v", err)
 	}
 
+	// Load demo template.
+	demoTmpl, err := template.New("demo.html").ParseFS(webembed.TemplateFS, "templates/demo.html")
+	if err != nil {
+		log.Fatalf("parse demo template: %v", err)
+	}
+
 	// Handlers.
 	authH := handlers.NewAuthHandler(db, tm)
 	adminH := handlers.NewAdminHandler(db, cfg.AdminUser, cfg.AdminPassword, tmpl)
+	demoH := handlers.NewDemoHandler(demoTmpl)
 
 	// Router.
 	mux := http.NewServeMux()
@@ -71,6 +78,9 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
+
+	// Browser playground.
+	mux.Handle("/demo", demoH)
 
 	// Admin UI + JSON API.
 	adminH.Register(mux, "/admin")

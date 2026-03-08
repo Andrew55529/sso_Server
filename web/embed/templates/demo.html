@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SSO Playground</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e40af;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 1.4rem; }
+    header a { color: #bfdbfe; font-size: .85rem; text-decoration: none; }
+    header a:hover { color: #fff; }
+    main { padding: 2rem; max-width: 1100px; margin: 0 auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .card h2 {
+      margin: 0 0 1.2rem;
+      font-size: 1.1rem;
+      color: #1e40af;
+      border-bottom: 2px solid #e0e7ff;
+      padding-bottom: .5rem;
+    }
+    label { display: block; font-size: .85rem; color: #475569; margin-bottom: .2rem; }
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: .5rem .75rem;
+      font-size: .9rem;
+      margin-bottom: .9rem;
+      transition: border-color .15s;
+    }
+    input:focus { outline: none; border-color: #1e40af; }
+    .btn {
+      border: none;
+      border-radius: 6px;
+      padding: .55rem 1.1rem;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary  { background: #1e40af; color: #fff; }
+    .btn-green    { background: #16a34a; color: #fff; }
+    .btn-orange   { background: #f97316; color: #fff; }
+    .btn-red      { background: #ef4444; color: #fff; }
+    .btn-indigo   { background: #6366f1; color: #fff; }
+    .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
+    .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .4rem; }
+    .result {
+      background: #0f172a;
+      color: #7dd3fc;
+      border-radius: 6px;
+      padding: .9rem 1rem;
+      font-size: .8rem;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 3rem;
+      margin-top: .6rem;
+    }
+    .result.error { color: #fca5a5; }
+    .result.success { color: #86efac; }
+    .badge {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red   { background: #fee2e2; color: #991b1b; }
+    #session-section { grid-column: 1 / -1; }
+    .token-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .5rem;
+    }
+    .token-label {
+      font-size: .78rem;
+      color: #64748b;
+      width: 110px;
+      flex-shrink: 0;
+      font-weight: 600;
+    }
+    .token-value {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: .3rem .6rem;
+      font-family: monospace;
+      font-size: .75rem;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hint { font-size: .8rem; color: #94a3b8; margin-top: 1rem; }
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e40af;
+      color: #fff;
+      padding: .75rem 1.1rem;
+      border-radius: 6px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      z-index: 9999;
+      font-size: .9rem;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: .3rem;
+    }
+    .dot-green { background: #22c55e; }
+    .dot-red   { background: #ef4444; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🛝 SSO Playground</h1>
+  <a href="/admin">Admin Panel →</a>
+</header>
+
+<main>
+  <div class="grid">
+
+    <!-- Register -->
+    <div class="card">
+      <h2>📝 Register</h2>
+      <label for="reg-email">Email</label>
+      <input id="reg-email" type="email" placeholder="user@example.com" />
+      <label for="reg-username">Username</label>
+      <input id="reg-username" type="text" placeholder="johndoe" />
+      <label for="reg-password">Password</label>
+      <input id="reg-password" type="password" placeholder="Min 8 chars, 1 uppercase, 1 digit" />
+      <div class="actions">
+        <button class="btn btn-primary" onclick="doRegister()">Register</button>
+      </div>
+      <div id="reg-result" class="result">— response will appear here —</div>
+    </div>
+
+    <!-- Login -->
+    <div class="card">
+      <h2>🔑 Login</h2>
+      <label for="login-email">Email</label>
+      <input id="login-email" type="email" placeholder="user@example.com" />
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" placeholder="Password" />
+      <div class="actions">
+        <button class="btn btn-green" onclick="doLogin()">Login</button>
+      </div>
+      <div id="login-result" class="result">— response will appear here —</div>
+    </div>
+
+    <!-- Session / Tokens -->
+    <div class="card" id="session-section">
+      <h2>
+        🎟️ Session
+        <span id="session-status" style="float:right;font-size:.85rem;font-weight:normal;color:#64748b">
+          <span class="status-dot dot-red"></span> not logged in
+        </span>
+      </h2>
+
+      <div id="token-area" style="display:none">
+        <div class="token-row">
+          <span class="token-label">access_token</span>
+          <span class="token-value" id="show-access">—</span>
+        </div>
+        <div class="token-row">
+          <span class="token-label">id_token</span>
+          <span class="token-value" id="show-id">—</span>
+        </div>
+        <div class="token-row">
+          <span class="token-label">refresh_token</span>
+          <span class="token-value" id="show-refresh">—</span>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:.8rem">
+        <button class="btn btn-indigo btn-sm" onclick="doUserinfo()">GET /auth/userinfo</button>
+        <button class="btn btn-orange btn-sm" onclick="doRefresh()">Refresh Tokens</button>
+        <button class="btn btn-red btn-sm" onclick="doLogout()">Logout</button>
+      </div>
+
+      <div id="session-result" class="result">— login first to see your session data —</div>
+
+      <p class="hint">
+        After login, your tokens are stored in memory. Use the buttons above to call protected
+        endpoints and rotate tokens.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+  // In-memory session state
+  let session = {
+    accessToken: '',
+    idToken: '',
+    refreshToken: '',
+  };
+
+  function toast(msg, isError) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = isError ? '#dc2626' : '#1e40af';
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  function setResult(id, data, isError) {
+    const el = document.getElementById(id);
+    el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    el.className = 'result' + (isError ? ' error' : ' success');
+  }
+
+  function updateSessionUI() {
+    const hasSession = Boolean(session.accessToken);
+    document.getElementById('token-area').style.display = hasSession ? 'block' : 'none';
+    document.getElementById('session-status').innerHTML = hasSession
+      ? '<span class="status-dot dot-green"></span> logged in'
+      : '<span class="status-dot dot-red"></span> not logged in';
+
+    function truncate(s) { return s.length > 60 ? s.slice(0, 60) + '…' : s; }
+    if (hasSession) {
+      document.getElementById('show-access').textContent  = truncate(session.accessToken);
+      document.getElementById('show-id').textContent      = truncate(session.idToken);
+      document.getElementById('show-refresh').textContent = truncate(session.refreshToken);
+    }
+  }
+
+  async function callAPI(url, method, body, token) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    return { status: res.status, data };
+  }
+
+  async function doRegister() {
+    const email    = document.getElementById('reg-email').value.trim();
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!email || !username || !password) {
+      setResult('reg-result', 'Please fill in all fields.', true);
+      return;
+    }
+    try {
+      const { status, data } = await callAPI('/auth/register', 'POST', { email, username, password });
+      setResult('reg-result', data, status >= 400);
+      if (status === 201) toast('✅ Registration successful! You can now log in.');
+    } catch (e) {
+      setResult('reg-result', 'Network error: ' + e.message, true);
+    }
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) {
+      setResult('login-result', 'Please fill in email and password.', true);
+      return;
+    }
+    try {
+      const { status, data } = await callAPI('/auth/login', 'POST', { email, password });
+      setResult('login-result', data, status >= 400);
+      if (status === 200 && data.access_token) {
+        session.accessToken  = data.access_token;
+        session.idToken      = data.id_token || '';
+        session.refreshToken = data.refresh_token || '';
+        updateSessionUI();
+        setResult('session-result', data);
+        toast('✅ Logged in successfully!');
+      }
+    } catch (e) {
+      setResult('login-result', 'Network error: ' + e.message, true);
+    }
+  }
+
+  async function doUserinfo() {
+    if (!session.accessToken) {
+      setResult('session-result', 'You must log in first.', true);
+      return;
+    }
+    try {
+      const { status, data } = await callAPI('/auth/userinfo', 'GET', null, session.accessToken);
+      setResult('session-result', data, status >= 400);
+    } catch (e) {
+      setResult('session-result', 'Network error: ' + e.message, true);
+    }
+  }
+
+  async function doRefresh() {
+    if (!session.refreshToken) {
+      setResult('session-result', 'No refresh token available. Log in first.', true);
+      return;
+    }
+    try {
+      const { status, data } = await callAPI('/auth/refresh', 'POST', { refresh_token: session.refreshToken });
+      setResult('session-result', data, status >= 400);
+      if (status === 200 && data.access_token) {
+        session.accessToken  = data.access_token;
+        session.idToken      = data.id_token || '';
+        session.refreshToken = data.refresh_token || '';
+        updateSessionUI();
+        toast('🔄 Tokens refreshed!');
+      }
+    } catch (e) {
+      setResult('session-result', 'Network error: ' + e.message, true);
+    }
+  }
+
+  async function doLogout() {
+    if (!session.refreshToken) {
+      session = { accessToken: '', idToken: '', refreshToken: '' };
+      updateSessionUI();
+      setResult('session-result', '— logged out —');
+      return;
+    }
+    try {
+      await callAPI('/auth/logout', 'POST', { refresh_token: session.refreshToken });
+    } catch (_) { /* ignore */ }
+    session = { accessToken: '', idToken: '', refreshToken: '' };
+    updateSessionUI();
+    setResult('session-result', '— logged out —');
+    toast('👋 Logged out.');
+  }
+
+  updateSessionUI();
+</script>
+</body>
+</html>
