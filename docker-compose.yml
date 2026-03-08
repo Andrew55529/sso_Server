@@ -27,5 +27,21 @@ services:
       retries: 3
       start_period: 10s
 
+  demo_server:
+    build:
+      context: .
+      dockerfile: examples/demo_server/Dockerfile
+    container_name: sso_demo_server
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      HTTP_ADDR: ":8081"
+      # Inside docker compose the SSO server is reachable via its service name.
+      SSO_URL: "http://sso:8080"
+    depends_on:
+      sso:
+        condition: service_healthy
+
 volumes:
   sso_data:

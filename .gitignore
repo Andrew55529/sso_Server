@@ -1,5 +1,7 @@
 # Binaries
 sso-server
+/server
+/demo_server
 *.exe
 
 # Database files
