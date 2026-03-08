@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  sso:
+    build: .
+    container_name: sso_server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - sso_data:/app/data
+    environment:
+      HTTP_ADDR: ":8080"
+      DB_PATH: "/app/data/sso.db"
+      ACCESS_SECRET: "${ACCESS_SECRET:-change-me-access-secret}"
+      REFRESH_SECRET: "${REFRESH_SECRET:-change-me-refresh-secret}"
+      ID_SECRET: "${ID_SECRET:-change-me-id-secret}"
+      ACCESS_TTL_MINUTES: "${ACCESS_TTL_MINUTES:-15}"
+      REFRESH_TTL_DAYS: "${REFRESH_TTL_DAYS:-30}"
+      ID_TTL_MINUTES: "${ID_TTL_MINUTES:-15}"
+      ADMIN_USER: "${ADMIN_USER:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sso_data:

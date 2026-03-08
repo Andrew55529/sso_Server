@@ -1,0 +1,21 @@
+# Binaries
+sso-server
+*.exe
+
+# Database files
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Environment
+.env
+
+# Go build artifacts
+vendor/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
